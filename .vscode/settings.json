@@ -2,6 +2,7 @@
   // Disable the default formatter, use eslint instead
   "prettier.enable": false,
   "editor.formatOnSave": false,
+  "deno.enable": true,
 
   // Auto fix
   "editor.codeActionsOnSave": {
@@ -46,5 +47,8 @@
     "scss",
     "pcss",
     "postcss"
+  ],
+  "cSpell.words": [
+    "deepseek"
   ]
 }

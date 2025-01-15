@@ -1,0 +1,18 @@
+{
+  "name": "@beautiful-help-document/server",
+  "type": "module",
+  "version": "0.0.2",
+  "private": true,
+  "scripts": {
+    "dev": "node ./index.ts",
+    "dev:deno": "deno ./index.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/deepseek": "^0.0.5",
+    "ai": "^4.0.36"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "vite": "^6.0.5"
+  }
+}
