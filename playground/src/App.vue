@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import RenderMarkdown from './RenderMarkdown.vue'
+import MarkdownRender from './MarkdownRender.vue'
 
 const inputValue = ref()
 const text = ref()
@@ -29,7 +29,7 @@ async function fetchTargetHTML() {
     <button type="button" @click="stop = true">
       Stop
     </button>
-    <RenderMarkdown :text="text" />
+    <MarkdownRender :text="text" />
   </form>
 </template>
 
