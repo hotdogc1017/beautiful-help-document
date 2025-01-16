@@ -2,30 +2,57 @@
 import { ref } from 'vue'
 import MarkdownRender from './MarkdownRender.vue'
 
+type FetchStatus = 'connect' | 'pending' | 'start' | 'running' | 'end' | 'disconnect'
+
+const fetchStatusMapping: Record<FetchStatus, string> = {
+  connect: '连接到代理服务器',
+  pending: '等待代理服务器',
+  start: '代理服务器已准备响应',
+  running: '代理服务器正在输出文本',
+  end: '代理服务器已输出所有文本',
+  disconnect: '已断开代理服务器',
+}
+
 const inputValue = ref()
-const text = ref()
+const text = ref('')
 const stop = ref(false)
+const status = ref<FetchStatus | null>()
 
 async function fetchTargetHTML() {
   stop.value = false
   const eventSource = new EventSource(`http://localhost:8000/man/command?name=${inputValue.value}`)
 
-  eventSource.addEventListener('message', (event) => {
+  const setStatus = (fetchStatus: FetchStatus) => {
+    return () => {
+      status.value = fetchStatus
+    }
+  }
+
+  eventSource.addEventListener('text', (event) => {
     if (stop.value) {
       eventSource.close()
     }
-    text.value = JSON.parse(event.data).data ?? ''
+
+    const partTextJSON = event?.data
+    if (!partTextJSON) {
+      return
+    }
+    text.value = JSON.parse(partTextJSON)?.data ?? ''
   })
 
-  eventSource.addEventListener('finished', (event) => {
-    console.log(`ok`, event.data)
-  })
+  eventSource.addEventListener('open', setStatus('connect'))
+  eventSource.addEventListener('start', setStatus('start'))
+  eventSource.addEventListener('end', setStatus('end'))
 }
 </script>
 
 <template>
   <form @submit.prevent="fetchTargetHTML">
-    <input v-model="inputValue" placeholder="输入命令">
+    <label style="display: inline-grid;grid-template-columns: 1fr;">
+      <input v-model="inputValue" placeholder="输入命令">
+      <small v-if="status">{{ fetchStatusMapping[status] }}</small>
+    </label>
+
     <button type="button" @click="stop = true">
       Stop
     </button>

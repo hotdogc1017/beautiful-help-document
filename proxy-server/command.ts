@@ -1,6 +1,6 @@
 import type { Handler } from './types.deno.d.ts'
 import { createDeepSeek } from '@ai-sdk/deepseek'
-import { streamObject, streamText } from 'ai'
+import { streamText } from 'ai'
 
 interface Command {
   name: string
@@ -11,54 +11,25 @@ const deepseek = createDeepSeek({
   apiKey: 'your_key',
 })
 
-function streamMarkdownResponse(html: string) {
-  const abortController = new AbortController()
+function generateEventStreamData(data: string, event?: string) {
+  const eventLine = event ? `event: ${event}\n` : ''
+  const dataLine = `data: ${JSON.stringify({ data })}\n\n`
+  return eventLine + dataLine
+}
 
+function streamMarkdownResponse(html: string, abortSignal: AbortSignal) {
   const { fullStream } = streamText({
     model: deepseek('deepseek-chat'),
-    // output: 'no-schema',
     prompt: `将以下HTML优化为markdown格式, 记住, 你的回答只需要给我结果。${html}`,
-    abortSignal: abortController.signal,
+    abortSignal,
   })
 
-  function generateEventStreamData(data: string, event?: string) {
-    const eventLine = event ? `event: ${event}\n` : ''
-    const dataLine = `data: ${JSON.stringify({ data })}\n\n`
-    return eventLine + dataLine
-  }
-
-  const body = new ReadableStream({
-    async start(controller) {
-      for await (const fullPart of fullStream) {
-        if (abortController.signal.aborted) {
-          return
-        }
-
-        if (fullPart.textDelta === undefined) {
-          continue
-        }
-
-        const result = generateEventStreamData(fullPart.textDelta)
-        controller.enqueue(result)
-      }
-
-      // const fullText = await text
-      // controller.enqueue(generateEventStreamData(JSON.stringify({ data: fullText }), 'finished'))
-    },
-    cancel() {
-      abortController.abort()
-    },
-  })
-
-  return new Response(body.pipeThrough(new TextEncoderStream()), {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'content-type': 'text/event-stream; charset=utf-8',
-    },
-  })
+  return fullStream
 }
 
 export function handler(): Handler {
+  const abortController = new AbortController()
+
   const test = (req: Request) => {
     const url = new URL(req.url)
     return url.pathname === '/man/command'
@@ -79,9 +50,38 @@ export function handler(): Handler {
 
     const html = await response.text()
 
-    console.log(`已读取到源html`)
+    const body = new ReadableStream({
+      async start(controller) {
+        controller.enqueue(generateEventStreamData('', 'start'))
 
-    return streamMarkdownResponse(html)
+        const textStreamAI = streamMarkdownResponse(html, abortController.signal)
+        for await (const fullPart of textStreamAI) {
+          if (abortController.signal.aborted) {
+            return
+          }
+
+          const text = (fullPart as { textDelta: string }).textDelta
+          if (text === undefined) {
+            continue
+          }
+
+          const result = generateEventStreamData(text, 'text')
+          controller.enqueue(result)
+        }
+
+        controller.enqueue(generateEventStreamData('', 'end'))
+      },
+      cancel() {
+        abortController.abort()
+      },
+    })
+
+    return new Response(body.pipeThrough(new TextEncoderStream()), {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'content-type': 'text/event-stream; charset=utf-8',
+      },
+    })
   }
 
   return { label: '命令行查询', test, handler }
