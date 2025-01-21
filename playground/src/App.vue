@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { createSSRApp, ref } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 import MarkdownRender from './MarkdownRender.vue'
 
-type FetchStatus = 'connect' | 'pending' | 'start' | 'running' | 'end' | 'disconnect'
+type FetchStatus = 'connect' | 'pending' | 'start' | 'running' | 'finish' | 'disconnect'
 
 const fetchStatusMapping: Record<FetchStatus, string> = {
   connect: '连接到代理服务器',
   pending: '等待代理服务器',
   start: '代理服务器已准备响应',
   running: '代理服务器正在输出文本',
-  end: '代理服务器已输出所有文本',
+  finish: '代理服务器已输出所有文本',
   disconnect: '已断开代理服务器',
 }
 
@@ -17,6 +18,12 @@ const inputValue = ref()
 const text = ref('')
 const stop = ref(false)
 const status = ref<FetchStatus | null>()
+
+async function generateHTML() {
+  const app = createSSRApp(MarkdownRender, { text: text.value })
+  const html = await renderToString(app)
+  console.log(html)
+}
 
 async function fetchTargetHTML() {
   stop.value = false
@@ -28,11 +35,12 @@ async function fetchTargetHTML() {
     }
   }
 
-  eventSource.addEventListener('text', (event) => {
+  eventSource.addEventListener('text-delta', (event) => {
     if (stop.value) {
       eventSource.close()
     }
 
+    setStatus('running')()
     const partTextJSON = event?.data
     if (!partTextJSON) {
       return
@@ -42,7 +50,7 @@ async function fetchTargetHTML() {
 
   eventSource.addEventListener('open', setStatus('connect'))
   eventSource.addEventListener('start', setStatus('start'))
-  eventSource.addEventListener('end', setStatus('end'))
+  eventSource.addEventListener('finish', setStatus('finish'))
 }
 </script>
 
@@ -55,6 +63,9 @@ async function fetchTargetHTML() {
 
     <button type="button" @click="stop = true">
       Stop
+    </button>
+    <button type="button" @click="generateHTML">
+      Print
     </button>
     <MarkdownRender :text="text" />
   </form>
