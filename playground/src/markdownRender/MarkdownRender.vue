@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import markdownit from 'markdown-it'
 import { nextTick, ref, watch } from 'vue'
-// @ts-ignore
 import 'github-markdown-css'
 
 const props = defineProps<{
@@ -9,12 +8,10 @@ const props = defineProps<{
 }>()
 
 const md = ref(markdownit())
-const markdownText = ref()
 const renderMarkdownRef = ref<HTMLElement | null>()
 
 watch(() => props.text, async (text) => {
-  markdownText.value += text ?? ''
-  const parsedHTML = md.value.render(markdownText.value)
+  const parsedHTML = md.value.render(text)
   await nextTick()
   renderMarkdownRef.value!.innerHTML = parsedHTML
 })

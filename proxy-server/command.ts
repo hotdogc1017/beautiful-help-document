@@ -85,7 +85,7 @@ export function handler(): Handler {
       async start(controller) {
         controller.enqueue(generateEventStreamData('start'))
 
-        const { fullStream } = streamText({
+        const { fullStream, text } = streamText({
           model: deepseek('deepseek-chat'),
           prompt: `将以下HTML优化为markdown格式, 记住, 你的回答只需要给我结果。${html}`,
           abortSignal: abortController.signal,
@@ -96,7 +96,11 @@ export function handler(): Handler {
           controller.enqueue(result)
         }
 
-        controller.enqueue(generateEventStreamData('end'))
+        const markdown = await text
+        controller.enqueue(generateEventStreamData({
+          data: markdown,
+          event: 'end',
+        }))
       },
       cancel() {
         abortController.abort()

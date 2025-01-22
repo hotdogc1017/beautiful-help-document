@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { createSSRApp, ref } from 'vue'
-import { renderToString } from 'vue/server-renderer'
-import MarkdownRender from './MarkdownRender.vue'
+import { ref } from 'vue'
+import { extractContent, MarkdownRender } from './markdownRender'
 
 type FetchStatus = 'connect' | 'pending' | 'start' | 'running' | 'finish' | 'disconnect'
 
@@ -20,9 +19,7 @@ const stop = ref(false)
 const status = ref<FetchStatus | null>()
 
 async function generateHTML() {
-  const app = createSSRApp(MarkdownRender, { text: text.value })
-  const html = await renderToString(app)
-  console.log(html)
+
 }
 
 async function fetchTargetHTML() {
@@ -45,8 +42,14 @@ async function fetchTargetHTML() {
     if (!partTextJSON) {
       return
     }
-    text.value = JSON.parse(partTextJSON)?.data ?? ''
+    text.value = extractContent(text.value + (JSON.parse(partTextJSON)?.data ?? ''))
   })
+
+  // eventSource.addEventListener('end', (event) => {
+  //   const finalText = event?.data
+  //   text.value = extractContent(JSON.parse(finalText)?.data)
+  //   console.log(text.value)
+  // })
 
   eventSource.addEventListener('open', setStatus('connect'))
   eventSource.addEventListener('start', setStatus('start'))

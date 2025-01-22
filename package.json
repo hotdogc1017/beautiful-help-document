@@ -7,7 +7,7 @@
     "dev": "pnpm -C playground dev & deno --allow-env --allow-net --env-file=.env.local -- proxy-server/index.deno.ts",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "clean": "rimraf **/dist **/node_modules",
+    "clean": "rimraf dist **/dist node_modules **/node_modules",
     "bumpp": "bumpp -r"
   },
   "devDependencies": {
