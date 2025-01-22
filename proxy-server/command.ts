@@ -51,6 +51,49 @@ function generateEventStreamData(input:
   return eventLine + dataLine
 }
 
+interface StreamPrettyMarkdownByAIOptions {
+  signal?: AbortSignal
+
+}
+
+export async function streamPrettyMarkdownByAI(command: string, section?: number, options?: StreamPrettyMarkdownByAIOptions) {
+  const { signal = new AbortController().signal } = options || {}
+
+  interface Config {
+    onHTML?: (html: string) => void
+  }
+  const config = {
+    onHTML: undefined,
+  } as Config
+  function onHTML(handler: (html: string) => void) {
+    config.onHTML = handler
+  }
+
+  async function generate() {
+    const response = await fetch(`https://man7.org/linux/man-pages/man1/${command}.${section || 1}.html`, {
+      signal,
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const html = await response.text()
+
+    config.onHTML?.(html)
+
+    const stream = streamText({
+      model: deepseek('deepseek-chat'),
+      prompt: `将以下HTML优化为markdown格式, 记住, 你的回答只需要给我结果。${html}`,
+      abortSignal: signal,
+    })
+
+    return stream
+  }
+
+  return { generate, onHTML }
+}
+
 export function handler(): Handler {
   const abortController = new AbortController()
 
@@ -71,36 +114,27 @@ export function handler(): Handler {
       section: Number.parseInt(searchParams.get('section')!),
     } as Command
 
-    const response = await fetch(`https://man7.org/linux/man-pages/man1/${command.name}.${command.section || 1}.html`, {
+    const { generate, onHTML } = await streamPrettyMarkdownByAI(command.name, command.section, {
       signal: abortController.signal,
     })
 
-    if (!response.ok) {
-      return response
-    }
-
-    const html = await response.text()
-
     const body = new ReadableStream({
       async start(controller) {
-        controller.enqueue(generateEventStreamData('start'))
-
-        const { fullStream, text } = streamText({
-          model: deepseek('deepseek-chat'),
-          prompt: `将以下HTML优化为markdown格式, 记住, 你的回答只需要给我结果。${html}`,
-          abortSignal: abortController.signal,
+        onHTML(() => {
+          controller.enqueue(generateEventStreamData('start'))
         })
+        const { fullStream } = (await generate()) ?? {}
+
+        if (!fullStream) {
+          abortController.abort()
+          return
+        }
 
         for await (const fullPart of fullStream) {
           const result = generateEventStreamData(fullPart)
           controller.enqueue(result)
         }
-
-        const markdown = await text
-        controller.enqueue(generateEventStreamData({
-          data: markdown,
-          event: 'end',
-        }))
+        controller.enqueue(generateEventStreamData('end'))
       },
       cancel() {
         abortController.abort()

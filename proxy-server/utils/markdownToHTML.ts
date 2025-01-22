@@ -8,7 +8,7 @@ interface MarkdownToHTMLOptions {
   title?: string
 }
 
-export default function (markdown: string, options: MarkdownToHTMLOptions) {
+export function markdownToHTML(markdown: string, options: MarkdownToHTMLOptions) {
   let { title, filename, locale = new Intl.Locale('zh-CN') } = options || {}
 
   if (!filename) {
