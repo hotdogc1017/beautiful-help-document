@@ -2,7 +2,7 @@
   // Disable the default formatter, use eslint instead
   "prettier.enable": false,
   "editor.formatOnSave": false,
-  "deno.enable": false,
+  "deno.enable": true,
 
   // Auto fix
   "editor.codeActionsOnSave": {

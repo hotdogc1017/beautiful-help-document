@@ -1,6 +1,7 @@
 import type { Handler } from './types.deno.d.ts'
 import { createDeepSeek } from '@ai-sdk/deepseek'
-import { streamText, type TextStreamPart } from 'ai'
+import { streamText } from 'ai'
+import { generateEventStreamData } from './utils/server.ts'
 
 interface Command {
   name: string
@@ -11,49 +12,8 @@ const deepseek = createDeepSeek({
   apiKey: Deno.env.get('VITE_DEEPSEEK_API_KEY')!,
 })
 
-interface GenerateEventStreamDataOptions {
-  data: string
-  event?: string
-}
-
-type GenerateEventStreamDataStatus = 'start' | 'end' | 'finish'
-
-function generateEventStreamData(input:
-  | GenerateEventStreamDataStatus
-  | GenerateEventStreamDataOptions
-  | TextStreamPart<any>) {
-  if (typeof input === 'string') {
-    return generateEventStreamData({
-      data: '',
-      event: input,
-    })
-  }
-
-  if ('type' in input) {
-    const { type } = input
-
-    let data: string
-    if (type === 'error') {
-      data = JSON.stringify(input.error)
-    }
-    else if (type === 'text-delta') {
-      data = input.textDelta
-    }
-    else {
-      data = `不支持处理类型: ${type}`
-    }
-    return generateEventStreamData({ data, event: type })
-  }
-
-  const { data, event } = input
-  const eventLine = event ? `event: ${event}\n` : ''
-  const dataLine = `data: ${JSON.stringify({ data })}\n\n`
-  return eventLine + dataLine
-}
-
 interface StreamPrettyMarkdownByAIOptions {
   signal?: AbortSignal
-
 }
 
 export async function streamPrettyMarkdownByAI(command: string, section?: number, options?: StreamPrettyMarkdownByAIOptions) {
@@ -84,7 +44,7 @@ export async function streamPrettyMarkdownByAI(command: string, section?: number
 
     const stream = streamText({
       model: deepseek('deepseek-chat'),
-      prompt: `将以下HTML优化为markdown格式, 记住, 你的回答只需要给我结果。${html}`,
+      prompt: `将以下内容优化为markdown格式, 记住, 你的回答只需要给我结果。${html}`,
       abortSignal: signal,
     })
 
