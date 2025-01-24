@@ -1,10 +1,7 @@
 {
   "version": "4",
   "specifiers": {
-    "jsr:@std/assert@1": "1.0.10",
-    "jsr:@std/bytes@^1.0.4": "1.0.4",
-    "jsr:@std/internal@^1.0.5": "1.0.5",
-    "jsr:@std/io@~0.225.1": "0.225.1",
+    "jsr:@std/cli@^1.0.11": "1.0.11",
     "npm:@ai-sdk/deepseek@^0.0.5": "0.0.5_zod@3.24.1",
     "npm:@types/markdown-it@^14.1.2": "14.1.2",
     "npm:@types/node@^22.10.5": "22.10.6",
@@ -13,23 +10,8 @@
     "npm:vite@^6.0.5": "6.0.7_@types+node@22.10.6"
   },
   "jsr": {
-    "@std/assert@1.0.10": {
-      "integrity": "59b5cbac5bd55459a19045d95cc7c2ff787b4f8527c0dd195078ff6f9481fbb3",
-      "dependencies": [
-        "jsr:@std/internal"
-      ]
-    },
-    "@std/bytes@1.0.4": {
-      "integrity": "11a0debe522707c95c7b7ef89b478c13fb1583a7cfb9a85674cd2cc2e3a28abc"
-    },
-    "@std/internal@1.0.5": {
-      "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
-    },
-    "@std/io@0.225.1": {
-      "integrity": "0a055fa523288d596f09ba11af5e006f17cecc75bab949b233ceba7eba40293e",
-      "dependencies": [
-        "jsr:@std/bytes"
-      ]
+    "@std/cli@1.0.11": {
+      "integrity": "ec219619fdcd31bcf0d8e53bee1e2706ec9a02f70255365a094f69755dadd340"
     }
   },
   "npm": {
@@ -442,8 +424,7 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@std/assert@1",
-      "jsr:@std/io@~0.225.1"
+      "jsr:@std/cli@^1.0.11"
     ],
     "packageJson": {
       "dependencies": [
