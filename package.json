@@ -1,7 +1,7 @@
 {
   "name": "beautiful-help-document",
   "type": "module",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "private": true,
   "scripts": {
     "dev": "pnpm -C playground dev & deno --allow-env --allow-net --env-file=.env.local -- proxy-server/index.deno.ts",
