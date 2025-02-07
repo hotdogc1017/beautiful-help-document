@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm -C playground dev & deno --allow-env --allow-net --env-file=.env.local -- proxy-server/index.deno.ts",
+    "dev:play": "pnpm -C playground dev",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "clean": "rimraf dist **/dist node_modules **/node_modules",
