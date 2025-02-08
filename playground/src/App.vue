@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import type { CoreTool, StreamTextResult } from 'ai'
+import useHTMLtoMarkdown, { extractHTMLBody, extractMarkdownContent } from '@/hooks/useHTMLtoMarkdown'
+import FileUpload, { type FileUploadSelectEvent } from 'primevue/fileupload'
+import InputText from 'primevue/inputtext'
+import ProgressSpinner from 'primevue/progressspinner'
 import { ref } from 'vue'
 import { extractContent, MarkdownRender } from './markdownRender'
 
@@ -13,14 +18,13 @@ const fetchStatusMapping: Record<FetchStatus, string> = {
   disconnect: '已断开代理服务器',
 }
 
+const { convertToMarkdown } = useHTMLtoMarkdown({ apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY })
+
 const inputValue = ref()
 const text = ref('')
 const stop = ref(false)
 const status = ref<FetchStatus | null>()
-
-async function generateHTML() {
-
-}
+const loading = ref(false)
 
 async function fetchTargetHTML() {
   stop.value = false
@@ -55,40 +59,66 @@ async function fetchTargetHTML() {
   eventSource.addEventListener('start', setStatus('start'))
   eventSource.addEventListener('finish', setStatus('finish'))
 }
+
+async function appendText(response: StreamTextResult<Record<string, CoreTool>, any>) {
+  const { textStream } = response
+  for await (const textPart of textStream) {
+    text.value = extractMarkdownContent(text.value + textPart)
+  }
+}
+
+async function onSubmitted() {
+  loading.value = true
+  loading.value = true
+  convertToMarkdown(inputValue.value).then(appendText).catch((e) => {
+    console.error(e)
+  }).finally(() => {
+    loading.value = false
+  })
+}
+
+async function onSelect(event: FileUploadSelectEvent) {
+  const file = event.files[0] as File
+  const content = extractHTMLBody(await file.text())
+  console.log(`${Math.round(content.length / 1000)}K`)
+  // console.log(content)
+  // loading.value = true
+  // convertToMarkdown(file).then(appendText).catch((e) => {
+  //   console.error(e)
+  // }).finally(() => {
+  //   loading.value = false
+  // })
+}
 </script>
 
 <template>
-  <form @submit.prevent="fetchTargetHTML">
+  <form v-if="!text" @submit.prevent="onSubmitted">
     <label style="display: inline-grid;grid-template-columns: 1fr;">
-      <input v-model="inputValue" placeholder="输入命令">
-      <small v-if="status">{{ fetchStatusMapping[status] }}</small>
+      <InputText v-model="inputValue" placeholder="输入内容" />
     </label>
 
-    <button type="button" @click="stop = true">
+    <FileUpload
+      mode="basic"
+      accept="text/html"
+      choose-label="Browse"
+      @select="onSelect"
+    />
+
+    <ProgressSpinner v-if="loading" />
+
+    <!-- <button type="button" @click="stop = true">
       Stop
-    </button>
-    <button type="button" @click="generateHTML">
-      Print
-    </button>
-    <MarkdownRender :text="text" />
+    </button> -->
   </form>
+
+  <MarkdownRender v-else :text="text" />
 </template>
 
 <style scoped>
-html {
+:global(#app) {
   display: flex;
+  height: 100vh;
   justify-content: center;
   align-items: center;
-}
-
-input {
-  box-sizing: border-box;
-  padding: 0.5rem;
-  border: 1px solid rosybrown;
-  border-radius: 0.5rem;
-}
-
-input:focus {
-  border: 2px solid rosybrown;
 }
 </style>

@@ -5,8 +5,8 @@ import markdownit from 'markdown-it'
 const md = markdownit()
 
 const deepseek = createDeepSeek({
-  // apiKey: Deno.env.get('VITE_DEEPSEEK_API_KEY')!,
-  apiKey: 'sk-0d5970b9959244899e8a2251202f88bb',
+  apiKey: Deno.env.get('VITE_DEEPSEEK_API_KEY')!,
+  // apiKey: 'sk-0d5970b9959244899e8a2251202f88bb',
 })
 
 interface MarkdownToHTMLOptions {
